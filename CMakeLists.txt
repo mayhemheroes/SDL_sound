@@ -197,6 +197,13 @@ set(SDLSOUND_ALL_SRCS
     ${LIBMODPLUG_HDRS}
 )
 
+option(SDLSOUND_INSTRUMENT "Instrument build libraries with libFuzzer sanitization" FALSE)
+if (SDLSOUND_INSTRUMENT AND NOT CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    message(FATAL_ERROR "Clang is required for libFuzzer instrumentation!")
+else()
+    message(STATUS "Instrumenting built libraries...")
+endif()
+
 option(SDLSOUND_BUILD_STATIC "Build static library" TRUE)
 if(OS2) # no static library on os/2
     set(SDLSOUND_BUILD_STATIC FALSE)
@@ -223,6 +230,10 @@ if(SDLSOUND_BUILD_STATIC)
         target_include_directories(SDL2_sound-static PUBLIC "$<BUILD_INTERFACE:${SDL2_INCLUDE_DIRS}>")
         target_link_libraries(SDL2_sound-static PRIVATE "$<BUILD_INTERFACE:${SDL2_LIBRARIES}>" ${OPTIONAL_LIBRARY_LIBS} ${OTHER_LDFLAGS})
     endif()
+    if(SDLSOUND_INSTRUMENT)
+        target_compile_options(SDL2_sound-static PUBLIC -fsanitize=fuzzer-no-link)
+        target_link_options(SDL2_sound-static PUBLIC -fsanitize=fuzzer-no-link)
+    endif()
     set(SDLSOUND_LIB_TARGET SDL2_sound-static)
 endif()
 
@@ -236,6 +247,12 @@ if(SDLSOUND_BUILD_SHARED)
     # Use `Compatible Interface Properties` to ensure a shared SDL_sound is linked to a shared SDL library
     set_property(TARGET SDL2_sound PROPERTY INTERFACE_SDL2_SHARED ON)
     set_property(TARGET SDL2_sound APPEND PROPERTY COMPATIBLE_INTERFACE_BOOL SDL2_SHARED)
+
+    if(SDLSOUND_INSTRUMENT)
+        target_compile_options(SDL2_sound-static PUBLIC -fsanitize=fuzzer)
+        target_link_options(SDL2_sound-static PUBLIC -fsanitize=fuzzer)
+    endif()
+
     if(WIN32 OR OS2)
         SET_TARGET_PROPERTIES(SDL2_sound PROPERTIES DEFINE_SYMBOL SDL_SOUND_DLL_EXPORTS)
         # avoid DLL having "lib" prefix
@@ -281,6 +298,10 @@ if(SDLSOUND_BUILD_TEST)
     target_compile_definitions(playsound PRIVATE "HAVE_SETBUF")
     target_compile_definitions(playsound PRIVATE "HAVE_ASSERT_H")
     target_compile_definitions(playsound PRIVATE "HAVE_SIGNAL_H")
+    if(SDLSOUND_INSTRUMENT)
+        target_compile_options(playsound PRIVATE -fsanitize=fuzzer-no-link)
+        target_link_options(playsound PRIVATE -fsanitize=fuzzer-no-link)
+    endif()
 
     list(APPEND SDLSOUND_INSTALL_TARGETS playsound)
     add_executable(playsound_simple examples/playsound_simple.c)
@@ -292,6 +313,10 @@ if(SDLSOUND_BUILD_TEST)
     endif()
     target_link_libraries(playsound_simple PRIVATE ${SDLSOUND_LIB_TARGET} ${OTHER_LDFLAGS})
     #list(APPEND SDLSOUND_INSTALL_TARGETS playsound_simple)
+    if(SDLSOUND_INSTRUMENT)
+        target_compile_options(playsound_simple PRIVATE -fsanitize=fuzzer-no-link)
+        target_link_options(playsound_simple PRIVATE -fsanitize=fuzzer-no-link)
+    endif()
     IF (WIN32 AND MSVC)
         SET_TARGET_PROPERTIES(playsound PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
         SET_TARGET_PROPERTIES(playsound_simple PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE")
@@ -429,4 +454,7 @@ message_bool_option("Build static library" SDLSOUND_BUILD_STATIC)
 message_bool_option("Build shared library" SDLSOUND_BUILD_SHARED)
 message_bool_option("Build stdio test program" SDLSOUND_BUILD_TEST)
 
+if (SDLSOUND_INSTRUMENT)
+    add_subdirectory(fuzz)
+endif()
 # end of CMakeLists.txt
