@@ -1,5 +1,5 @@
 image: ghcr.io/capuanob/sdl-sound-fuzz:latest
-project: sdlsound
+project: sdl-sound
 target: sdl-sound-fuzzer
 tests:
   - file://fuzz/corpus
