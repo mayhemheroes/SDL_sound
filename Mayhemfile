@@ -1,7 +1,5 @@
 project: sdl-sound
 target: sdl-sound-fuzzer
-testsuite:
-  - file://fuzz/corpus
 
 cmds:
   - cmd: /SDL_sound-fuzzer
