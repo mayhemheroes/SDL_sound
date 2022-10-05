@@ -13,7 +13,7 @@ WORKDIR SDL_sound
 ## Build
 RUN mkdir build
 WORKDIR build
-RUN CC=clang cmake .. -DSDLSOUND_INSTRUMENT=1 -DSDLSOUND_BUILD_SHARED=0
+RUN CC=clang CXX=clang++ cmake .. -DSDLSOUND_INSTRUMENT=1 
 RUN make -j$(nproc)
 
 ## Package Stage
