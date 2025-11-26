@@ -1,0 +1,12 @@
+project: mayhemheroes/sdl-sound
+target: sdl-sound-fuzzer
+
+cmds:
+  - cmd: /SDL_sound-fuzzer
+    max_length: 200000
+    libfuzzer: true
+    env: {}
+image: ghcr.io/mayhemheroes/sdl_sound@sha256:d8e607d61d8d5708553eb2e17bb835b8fbe0cf431eba0fc494e718eba5782377
+duration: 300
+testsuite:
+  - https://app.mayhem.security/mayhemheroes/sdl-sound/sdl-sound-fuzzer/testsuite.tar

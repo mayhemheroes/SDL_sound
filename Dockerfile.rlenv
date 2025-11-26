@@ -1,0 +1,119 @@
+# ============================================================================
+# RLENV Patch Playground - Single-Stage Build
+# ============================================================================
+# Project: SDL_sound fuzzer
+# Original image: ghcr.io/mayhemheroes/sdl_sound:main
+# Git revision: f245e080f0305b35ab9b3dae19e355347a9d08d3
+# ============================================================================
+
+# ============================================================================
+# 1. Base Image Selection
+# ============================================================================
+FROM --platform=linux/amd64 ubuntu:20.04
+
+# ============================================================================
+# 2. System Dependencies (merge ALL stages)
+# ============================================================================
+# Merged from both builder and package stages:
+# - Builder stage: clang cmake make libsdl2-dev
+# - Package stage: libsdl2-dev
+# - RLENV required: jq
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    clang \
+    cmake \
+    make \
+    libsdl2-dev \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# ============================================================================
+# 3. Copy MTV Binary (REQUIRED for validation)
+# ============================================================================
+COPY --from="us-east4-docker.pkg.dev/forallsecure-1/rlenv-staging/rlenv-mcp-static:latest" \
+     /rlenv/bin/mtv /rlenv/bin/mtv
+
+# ============================================================================
+# 4. Language-Specific Setup
+# ============================================================================
+# C/C++ project using CMake and clang
+ENV CC=clang
+ENV CXX=clang++
+
+# Required for runtime - SDL library path
+ENV LD_LIBRARY_PATH=/install/lib
+
+# ============================================================================
+# 5. Copy Source Code (EARLY - source exists now)
+# ============================================================================
+COPY . /rlenv/source/sdl-sound/
+
+# ============================================================================
+# 6. Make Source World-Writable (REQUIRED for non-root rebuilds)
+# ============================================================================
+RUN chmod -R 777 /rlenv/source
+
+# ============================================================================
+# 7. Set Working Directory
+# ============================================================================
+WORKDIR /rlenv/source/sdl-sound/
+
+# ============================================================================
+# 8. Install Language Dependencies
+# ============================================================================
+# No additional language dependencies needed for C/C++ with system packages
+
+# ============================================================================
+# 9. Build Application
+# ============================================================================
+# Create build directory and install directory
+RUN mkdir build && \
+    mkdir /install
+
+# Run CMake configuration
+WORKDIR /rlenv/source/sdl-sound/build
+RUN CC=clang CXX=clang++ cmake -DCMAKE_INSTALL_PREFIX=/install .. -DSDLSOUND_INSTRUMENT=1
+
+# Build with all available cores
+RUN make -j$(nproc)
+
+# Install libraries to /install prefix
+RUN make install
+
+# ============================================================================
+# 10. Copy Artifacts to Expected Locations
+# ============================================================================
+# Copy fuzzer binary to expected location
+RUN cp /rlenv/source/sdl-sound/build/fuzz/SDL_sound-fuzzer /SDL_sound-fuzzer
+
+# ============================================================================
+# 11. Permission Management (REQUIRED)
+# ============================================================================
+# Target executable (rwxrwxrwx - allows non-root to overwrite during rebuild)
+RUN chmod 777 /SDL_sound-fuzzer
+
+# Build output directory
+RUN chmod -R 777 /rlenv/source/sdl-sound/build 2>/dev/null || true
+
+# Install directory must be writable for non-root (make install needs to write here)
+RUN chmod -R 777 /install 2>/dev/null || true
+
+# ============================================================================
+# 12. Copy rlenv Directory (MUST BE NEAR END - doesn't exist yet!)
+# ============================================================================
+COPY rlenv /rlenv
+
+# ============================================================================
+# 13. Final Permission Fix (REQUIRED)
+# ============================================================================
+RUN chmod -R 777 /rlenv/source
+
+# ============================================================================
+# 14. Set Entry Point
+# ============================================================================
+CMD ["/SDL_sound-fuzzer"]
+
+# ============================================================================
+# 15. Reset Working Directory
+# ============================================================================
+WORKDIR /
