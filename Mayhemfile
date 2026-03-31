@@ -1,0 +1,7 @@
+project: sdl-sound
+target: sdl-sound-fuzzer
+
+cmds:
+  - cmd: /SDL_sound-fuzzer
+    max_length: 200000
+    libfuzzer: true
