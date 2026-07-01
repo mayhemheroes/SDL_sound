@@ -1,0 +1,10 @@
+project: sdl-sound
+target: sdl-sound-fuzzer
+
+cmds:
+  - cmd: /mayhem/fuzz_samplefrommem
+    max_length: 200000
+    libfuzzer: true
+
+testsuite:
+  - file:///mayhem/mayhem/corpus
