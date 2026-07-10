@@ -40,7 +40,7 @@ fi
 
 # Run the known-answer test against the shipped corpus; capture output to parse counts.
 export SDL_AUDIODRIVER=dummy
-out="$("$RUNNER" "$SRC/mayhem/corpus" 2>&1)"
+out="$("$RUNNER" "$SRC/mayhem/sdl-sound-fuzzer/testsuite" 2>&1)"
 rc=$?
 echo "$out"
 
