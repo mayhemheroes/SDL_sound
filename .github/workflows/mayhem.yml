@@ -101,4 +101,5 @@ jobs:
         uses: ForAllSecure/mcode-action@0af845c7ffa7f282942825b84b07de6e2cdc7a7c
         with:
           mayhem-token: ${{ secrets.MAYHEM_TOKEN }}
+          project: sdl-sound
           args: --image ${{ needs.build.outputs.image }} --file ${{ matrix.mayhemfile }} --duration ${{ inputs.duration || '1200' }}
