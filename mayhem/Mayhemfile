@@ -7,5 +7,5 @@ cmds:
     libfuzzer: true
 
 testsuite:
-  - https://$MAYHEM_DOMAIN/$MAYHEM_PROJECT/$MAYHEM_TARGET/testsuite.tar
+  - https://$MAYHEM_DOMAIN/sdl-sound/$MAYHEM_TARGET/testsuite.tar
   - file://mayhem/sdl-sound-fuzzer/testsuite
